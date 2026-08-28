@@ -1,16 +1,20 @@
+import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function DashboardPage() {
+async function DashboardContent() {
   const supabase = await createClient();
 
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (userError || !user) {
     return (
-      <main className="p-8">
-        <h1>Você precisa estar logado.</h1>
+      <main className="mx-auto max-w-5xl p-6">
+        <h1 className="text-2xl font-bold">
+          Você precisa estar logado.
+        </h1>
       </main>
     );
   }
@@ -29,10 +33,14 @@ export default async function DashboardPage() {
 
   if (error) {
     return (
-      <main className="p-8">
-        <h1>Erro</h1>
+      <main className="mx-auto max-w-5xl p-6">
+        <h1 className="text-2xl font-bold">
+          Erro ao carregar os espaços
+        </h1>
 
-        <pre>{error.message}</pre>
+        <pre className="mt-4">
+          {error.message}
+        </pre>
       </main>
     );
   }
@@ -67,8 +75,38 @@ export default async function DashboardPage() {
               </p>
             </div>
           ))}
+
+          {workspaces?.length === 0 && (
+            <p className="text-gray-500">
+              Nenhum espaço encontrado.
+            </p>
+          )}
         </div>
       </section>
     </main>
+  );
+}
+
+function DashboardLoading() {
+  return (
+    <main className="mx-auto max-w-5xl p-6">
+      <div className="animate-pulse">
+        <div className="h-9 w-48 rounded bg-gray-200" />
+
+        <div className="mt-3 h-5 w-64 rounded bg-gray-200" />
+
+        <div className="mt-10 h-6 w-36 rounded bg-gray-200" />
+
+        <div className="mt-5 h-24 rounded-xl bg-gray-200" />
+      </div>
+    </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
