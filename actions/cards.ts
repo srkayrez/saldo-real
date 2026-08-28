@@ -8,8 +8,10 @@ import {
 } from "@/lib/finance/context";
 import {
   generateInstallmentPlan,
+  getEffectiveInvoiceStatus,
   parseMoneyToCents,
 } from "@/lib/finance/cards/engine";
+import { getTodayInSaoPaulo } from "@/lib/finance/cards/data";
 import type { ActionState } from "@/types/finance";
 
 function parseDay(value: FormDataEntryValue | null) {
@@ -145,4 +147,64 @@ export async function createCardPurchase(
   revalidatePath("/cards");
   revalidatePath(`/cards/${cardId}`);
   return { success: "Compra registrada e parcelas geradas com sucesso." };
+}
+
+export async function payCardInvoice(
+  _previousState: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const invoiceId = String(formData.get("invoice_id") ?? "");
+  const cardId = String(formData.get("credit_card_id") ?? "");
+  const accountId = String(formData.get("account_id") ?? "");
+  const paymentDate = String(formData.get("payment_date") ?? "");
+
+  if (!invoiceId || !cardId || !accountId) {
+    return { error: "Selecione uma conta para pagamento." };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
+    return { error: "Informe uma data de pagamento válida." };
+  }
+
+  try {
+    const workspace = await getActiveWorkspace();
+    if (!workspace) return { error: "Nenhum workspace disponível." };
+    const { supabase } = await requireWorkspaceMembership(workspace.id);
+
+    const { data: invoice } = await supabase
+      .from("card_invoices")
+      .select("id, credit_card_id, closing_date, status")
+      .eq("id", invoiceId)
+      .eq("credit_card_id", cardId)
+      .eq("workspace_id", workspace.id)
+      .maybeSingle();
+    if (!invoice) return { error: "A fatura é inválida ou inacessível." };
+
+    const effectiveStatus = getEffectiveInvoiceStatus(invoice, getTodayInSaoPaulo());
+    if (effectiveStatus === "open") return { error: "Faturas abertas não podem ser pagas antecipadamente." };
+    if (effectiveStatus === "paid") return { error: "Esta fatura já foi paga." };
+
+    const { data: account } = await supabase
+      .from("accounts")
+      .select("id")
+      .eq("id", accountId)
+      .eq("workspace_id", workspace.id)
+      .eq("active", true)
+      .maybeSingle();
+    if (!account) return { error: "A conta é inválida, inativa ou pertence a outro workspace." };
+
+    const { error } = await supabase.rpc("pay_card_invoice", {
+      p_account_id: accountId,
+      p_invoice_id: invoiceId,
+      p_payment_date: paymentDate,
+    });
+    if (error) return { error: `Não foi possível pagar a fatura: ${error.message}` };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Erro inesperado." };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/transactions");
+  revalidatePath("/cards");
+  revalidatePath(`/cards/${cardId}`);
+  return { success: "Fatura paga com sucesso." };
 }

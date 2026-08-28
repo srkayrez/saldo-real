@@ -2,9 +2,10 @@
 
 import {
   ArrowLeftRight,
-  ChartNoAxesCombined,
   CreditCard,
   LayoutDashboard,
+  Repeat2,
+  TrendingUp,
   Plus,
   WalletCards,
 } from "lucide-react";
@@ -18,6 +19,8 @@ const primaryItems = [
   { href: "/transactions", icon: ArrowLeftRight, label: "Movimentações" },
   { href: "/accounts", icon: WalletCards, label: "Contas" },
   { href: "/cards", icon: CreditCard, label: "Cartões" },
+  { href: "/recurrences", icon: Repeat2, label: "Recorrências" },
+  { href: "/forecast", icon: TrendingUp, label: "Previsão" },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -52,17 +55,6 @@ export function SidebarNavigation() {
         })}
       </div>
 
-      <div>
-        <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
-          Em breve
-        </p>
-        <div className="mt-2 space-y-1" aria-label="Funcionalidades futuras">
-          <div className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-muted-foreground/60">
-            <ChartNoAxesCombined className="size-5" />
-            Planejamento
-          </div>
-        </div>
-      </div>
     </nav>
   );
 }
@@ -75,7 +67,7 @@ export function MobileNavigation() {
       className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden"
       aria-label="Navegação mobile"
     >
-      <div className="mx-auto grid max-w-md grid-cols-5">
+      <div className="mx-auto grid max-w-xl grid-cols-7">
         {primaryItems.slice(0, 2).map((item) => {
           const Icon = item.icon;
           const active = isActive(pathname, item.href);

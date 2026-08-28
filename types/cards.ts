@@ -1,4 +1,5 @@
 export type InvoiceStatus = "open" | "closed" | "paid";
+export type EffectiveInvoiceStatus = InvoiceStatus;
 export type InstallmentStatus = "pending" | "paid" | "cancelled";
 
 export type CreditCard = {
@@ -51,6 +52,15 @@ export type CardInvoice = {
   status: InvoiceStatus;
 };
 
+export type CardInvoicePayment = {
+  account: { name: string } | null;
+  account_id: string;
+  amount: number | string;
+  id: string;
+  payment_date: string;
+  transaction_id: string;
+};
+
 export type InvoiceInstallment = {
   amount: number | string;
   id: string;
@@ -69,7 +79,9 @@ export type CardDetail = {
   card: CreditCard;
   committedLimit: number;
   installments: InvoiceInstallment[];
+  effectiveStatus: EffectiveInvoiceStatus;
   invoice: CardInvoice | null;
   invoiceCycle: InvoiceCycle;
   invoiceTotal: number;
+  payment: CardInvoicePayment | null;
 };

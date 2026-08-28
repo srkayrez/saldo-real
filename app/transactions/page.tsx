@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Plus } from "lucide-react";
 
 import { AppShell, FinancePageLoading } from "@/components/finance/app-shell";
+import { TransactionActions } from "@/components/finance/transaction-actions";
 import {
   EmptyState,
   MoneyValue,
@@ -28,20 +29,25 @@ async function TransactionsContent() {
       />
       <div className="hidden overflow-hidden rounded-2xl border bg-card shadow-sm md:block">
         <table className="w-full min-w-[850px] text-left text-sm">
-          <thead className="border-b bg-muted/50"><tr><th className="p-4">Data</th><th className="p-4">Descrição</th><th className="p-4">Categoria</th><th className="p-4">Conta</th><th className="p-4">Tipo</th><th className="p-4">Valor</th><th className="p-4">Status</th></tr></thead>
+          <thead className="border-b bg-muted/50"><tr><th className="p-4">Data</th><th className="p-4">Descrição</th><th className="p-4">Categoria</th><th className="p-4">Conta</th><th className="p-4">Tipo</th><th className="p-4">Valor</th><th className="p-4">Status</th><th className="p-4">Ações</th></tr></thead>
           <tbody>
             {transactions.map((transaction) => (
               <tr key={transaction.id} className="border-b last:border-0">
                 <td className="p-4">{formatDate(transaction.transaction_date)}</td>
-                <td className="p-4 font-medium">{transaction.description}</td>
-                <td className="p-4">{transaction.category?.name ?? "Sem categoria"}</td>
+                <td className="p-4 font-medium">{transaction.description}{transaction.origin === "recurrence" && <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">Recorrente</span>}</td>
+                <td className="p-4">{transaction.origin === "card_invoice_payment" ? "Pagamento de fatura" : transaction.category?.name ?? "Sem categoria"}</td>
                 <td className="p-4">{transaction.account?.name ?? "—"}</td>
                 <td className="p-4">{transaction.transaction_type === "income" ? "Receita" : "Despesa"}</td>
                 <td className="p-4 font-semibold"><MoneyValue tone={transaction.transaction_type === "income" ? "income" : "expense"} value={transaction.amount} /></td>
                 <td className="p-4"><StatusBadge status={transaction.status} /></td>
+                <td className="p-4">
+                  {transaction.origin !== "card_invoice_payment" && transaction.status === "pending"
+                    ? <TransactionActions compact transactionId={transaction.id} />
+                    : <Button asChild size="sm" variant="outline"><Link href={`/transactions/${transaction.id}`}>Ver</Link></Button>}
+                </td>
               </tr>
             ))}
-            {transactions.length === 0 && <tr><td colSpan={7}><EmptyState title="Nenhuma movimentação" description="Registre uma receita ou despesa para começar seu histórico." /></td></tr>}
+            {transactions.length === 0 && <tr><td colSpan={8}><EmptyState title="Nenhuma movimentação" description="Registre uma receita ou despesa para começar seu histórico." /></td></tr>}
           </tbody>
         </table>
       </div>
@@ -51,8 +57,9 @@ async function TransactionsContent() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <h2 className="truncate font-semibold">{transaction.description}</h2>
+                {transaction.origin === "recurrence" && <span className="mt-1 inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">Recorrente</span>}
                 <p className="mt-1 truncate text-sm text-muted-foreground">
-                  {transaction.category?.name ?? "Sem categoria"}
+                  {transaction.origin === "card_invoice_payment" ? "Pagamento de fatura" : transaction.category?.name ?? "Sem categoria"}
                 </p>
               </div>
               <MoneyValue
@@ -64,6 +71,11 @@ async function TransactionsContent() {
             <div className="mt-4 flex items-center justify-between gap-3 border-t pt-3">
               <span className="text-xs text-muted-foreground">{formatDate(transaction.transaction_date)}</span>
               <StatusBadge status={transaction.status} />
+            </div>
+            <div className="mt-3">
+              {transaction.origin !== "card_invoice_payment" && transaction.status === "pending"
+                ? <TransactionActions compact transactionId={transaction.id} />
+                : <Button asChild className="w-full" size="sm" variant="outline"><Link href={`/transactions/${transaction.id}`}>Ver detalhes</Link></Button>}
             </div>
           </article>
         ))}

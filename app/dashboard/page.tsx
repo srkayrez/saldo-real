@@ -8,6 +8,7 @@ import {
   MetricCard,
   MoneyValue,
   PageHeader,
+  RealBalanceCard,
   StatusBadge,
 } from "@/components/finance/finance-ui";
 import { getActiveWorkspace } from "@/lib/finance/context";
@@ -49,41 +50,91 @@ async function DashboardContent({ searchParams }: { searchParams: DashboardSearc
         title="Dashboard financeiro"
       />
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6" aria-label="Indicadores financeiros">
-        <div className="sm:col-span-2 xl:col-span-2">
-          <MetricCard
-          description="Contas incluídas e movimentações pagas"
-          featured
-          label="Saldo atual"
-          tone={dashboard.currentBalance >= 0 ? "income" : "expense"}
-          value={dashboard.currentBalance}
-          />
-        </div>
+      <RealBalanceCard
+        committed={dashboard.upcomingCommitmentsTotal}
+        currentBalance={dashboard.currentBalance}
+        realBalance={dashboard.realBalance}
+      />
+
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores financeiros">
         <MetricCard
-          description={period.label}
+          description={`Receitas pagas em ${period.label}`}
           label="Receitas do mês"
           tone="income"
           value={dashboard.income}
         />
         <MetricCard
-          description={period.label}
+          description="Contas manuais e parcelas do cartão no período"
           label="Despesas do mês"
           tone="expense"
           value={dashboard.expenses}
         />
         <MetricCard
-          description="Receitas menos despesas do período"
+          description="Receitas recebidas menos consumo e compromissos do mês"
           label="Resultado do mês"
           tone={dashboard.result >= 0 ? "income" : "expense"}
           value={dashboard.result}
         />
         <MetricCard
-          description="Todas as despesas ainda não pagas"
+          description="Contas manuais ainda não pagas"
           label="Despesas pendentes"
           tone="pending"
           value={dashboard.pendingExpenses}
         />
       </section>
+
+      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold">Próximos compromissos</h2>
+            <p className="text-sm text-muted-foreground">Vencidos e a vencer nos próximos 30 dias</p>
+          </div>
+          <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
+            <ul className="divide-y">
+              {dashboard.upcomingCommitments.map((commitment) => (
+                <li key={commitment.id} className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="truncate font-medium">{commitment.description}</span>
+                      {commitment.overdue && (
+                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">Vencido</span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {commitment.type} · {formatDate(commitment.date)}
+                    </p>
+                  </div>
+                  <MoneyValue className="shrink-0 font-semibold" tone="expense" value={commitment.amount} />
+                </li>
+              ))}
+            </ul>
+            {dashboard.upcomingCommitments.length === 0 && (
+              <EmptyState description="Nenhuma conta ou fatura compromete os próximos 30 dias." title="Tudo livre por enquanto" />
+            )}
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold">Parcelas futuras</h2>
+            <p className="text-sm text-muted-foreground">Compromissos pendentes de cartão</p>
+          </div>
+          <dl className="grid grid-cols-2 gap-3 rounded-2xl border bg-card p-4 shadow-sm">
+            {[
+              ["Até 30 dias", dashboard.futureCardCommitments.next30Days],
+              ["31 a 60 dias", dashboard.futureCardCommitments.days31To60],
+              ["61 a 90 dias", dashboard.futureCardCommitments.days61To90],
+              ["Após 90 dias", dashboard.futureCardCommitments.after90Days],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl bg-muted/50 p-3">
+                <dt className="text-xs text-muted-foreground">{label}</dt>
+                <dd><MoneyValue className="mt-1 block text-sm font-semibold" tone="pending" value={value} /></dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-xs text-muted-foreground">Somente a faixa de até 30 dias reduz o Saldo Real.</p>
+        </section>
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <section className="min-w-0 space-y-4">
@@ -110,7 +161,11 @@ async function DashboardContent({ searchParams }: { searchParams: DashboardSearc
                   <tr key={transaction.id} className="border-b last:border-0">
                     <td className="p-4 font-medium">{transaction.description}</td>
                     <td className="p-4">{formatDate(transaction.transaction_date)}</td>
-                    <td className="p-4">{transaction.category?.name ?? "Sem categoria"}</td>
+                    <td className="p-4">
+                      {transaction.origin === "card_invoice_payment"
+                        ? "Pagamento de fatura"
+                        : transaction.category?.name ?? "Sem categoria"}
+                    </td>
                     <td className="p-4">
                       {transaction.transaction_type === "income" ? "Receita" : "Despesa"}
                     </td>
@@ -145,7 +200,9 @@ async function DashboardContent({ searchParams }: { searchParams: DashboardSearc
                   <div className="min-w-0">
                     <h3 className="truncate font-semibold">{transaction.description}</h3>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {transaction.category?.name ?? "Sem categoria"} · {formatDate(transaction.transaction_date)}
+                      {transaction.origin === "card_invoice_payment"
+                        ? "Pagamento de fatura"
+                        : transaction.category?.name ?? "Sem categoria"} · {formatDate(transaction.transaction_date)}
                     </p>
                   </div>
                   <MoneyValue
@@ -189,7 +246,7 @@ async function DashboardContent({ searchParams }: { searchParams: DashboardSearc
             </ul>
             {dashboard.categoryExpenses.length === 0 && (
               <p className="text-sm text-muted-foreground">
-                Nenhuma despesa paga neste mês.
+                Nenhuma despesa ou parcela neste mês.
               </p>
             )}
           </div>

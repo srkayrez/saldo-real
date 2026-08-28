@@ -122,3 +122,36 @@ export function MetricCard({
     </article>
   );
 }
+
+export function RealBalanceCard({
+  committed,
+  currentBalance,
+  realBalance,
+}: {
+  committed: number;
+  currentBalance: number;
+  realBalance: number;
+}) {
+  return (
+    <article className="rounded-3xl border border-primary/20 bg-primary p-6 text-primary-foreground shadow-md sm:p-8">
+      <p className="text-sm font-medium text-primary-foreground/75">Saldo Real</p>
+      <MoneyValue
+        className="mt-2 block text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl"
+        value={realBalance}
+      />
+      <p className="mt-2 max-w-2xl text-sm text-primary-foreground/70">
+        Quanto permanece disponível após os compromissos vencidos e dos próximos 30 dias.
+      </p>
+      <dl className="mt-6 grid gap-3 border-t border-primary-foreground/20 pt-5 sm:grid-cols-2">
+        <div>
+          <dt className="text-xs text-primary-foreground/65">Saldo em contas</dt>
+          <dd><MoneyValue className="mt-1 block font-semibold text-primary-foreground" value={currentBalance} /></dd>
+        </div>
+        <div>
+          <dt className="text-xs text-primary-foreground/65">Comprometido até 30 dias</dt>
+          <dd><MoneyValue className="mt-1 block font-semibold text-primary-foreground" value={committed} /></dd>
+        </div>
+      </dl>
+    </article>
+  );
+}

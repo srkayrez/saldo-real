@@ -1,29 +1,22 @@
 import { createClient } from "@/lib/supabase/server";
+import { getTodayInSaoPaulo } from "@/lib/finance/date";
 import {
   calculateAvailableLimit,
   calculateCommittedLimit,
   determineCycleForReferenceMonth,
   determineInvoiceCycle,
+  getEffectiveInvoiceStatus,
 } from "@/lib/finance/cards/engine";
 import type {
   CardDetail,
   CardInvoice,
+  CardInvoicePayment,
   CardOverview,
   CreditCard,
   InvoiceInstallment,
 } from "@/types/cards";
 
-export function getTodayInSaoPaulo() {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    day: "2-digit",
-    month: "2-digit",
-    timeZone: "America/Sao_Paulo",
-    year: "numeric",
-  }).formatToParts(new Date());
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    parts.find((item) => item.type === type)?.value;
-  return `${part("year")}-${part("month")}-${part("day")}`;
-}
+export { getTodayInSaoPaulo } from "@/lib/finance/date";
 
 export async function getCreditCards(workspaceId: string): Promise<CardOverview[]> {
   const supabase = await createClient();
@@ -42,7 +35,7 @@ export async function getCreditCards(workspaceId: string): Promise<CardOverview[
       .eq("workspace_id", workspaceId),
     supabase
       .from("card_invoices")
-      .select("id, credit_card_id, reference_month, status")
+      .select("id, credit_card_id, reference_month, closing_date, status")
       .eq("workspace_id", workspaceId),
   ]);
 
@@ -77,7 +70,9 @@ export async function getCreditCards(workspaceId: string): Promise<CardOverview[
       committedLimit,
       currentInvoice: {
         referenceMonth,
-        status: (invoice?.status as CardOverview["currentInvoice"]["status"]) ?? null,
+        status: invoice
+          ? getEffectiveInvoiceStatus(invoice, today)
+          : null,
         total: invoiceTotal,
       },
     };
@@ -128,20 +123,29 @@ export async function getCardDetail(
 
   const invoice = invoiceResult.data as CardInvoice | null;
   let installments: InvoiceInstallment[] = [];
+  let payment: CardInvoicePayment | null = null;
   if (invoice) {
-    const { data, error: installmentsError } = await supabase
-      .from("card_installments")
-      .select(`
-        id, amount, installment_number, installment_total, status,
-        purchase:card_purchases(description, purchase_date, category:categories(name))
-      `)
-      .eq("workspace_id", card.workspace_id)
-      .eq("invoice_id", invoice.id)
-      .order("created_at", { ascending: true });
-    if (installmentsError) {
-      throw new Error(`Não foi possível carregar as parcelas: ${installmentsError.message}`);
-    }
-    installments = (data ?? []) as unknown as InvoiceInstallment[];
+    const [installmentsResult, paymentResult] = await Promise.all([
+      supabase
+        .from("card_installments")
+        .select(`
+          id, amount, installment_number, installment_total, status,
+          purchase:card_purchases(description, purchase_date, category:categories(name))
+        `)
+        .eq("workspace_id", card.workspace_id)
+        .eq("invoice_id", invoice.id)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("card_invoice_payments")
+        .select("id, account_id, transaction_id, amount, payment_date, account:accounts(name)")
+        .eq("workspace_id", card.workspace_id)
+        .eq("invoice_id", invoice.id)
+        .maybeSingle(),
+    ]);
+    const detailError = installmentsResult.error ?? paymentResult.error;
+    if (detailError) throw new Error(`Não foi possível carregar a fatura: ${detailError.message}`);
+    installments = (installmentsResult.data ?? []) as unknown as InvoiceInstallment[];
+    payment = paymentResult.data as unknown as CardInvoicePayment | null;
   }
 
   const committedLimit = calculateCommittedLimit(committedResult.data ?? []);
@@ -149,6 +153,7 @@ export async function getCardDetail(
     availableLimit: calculateAvailableLimit(card.limit_amount, committedLimit),
     card,
     committedLimit,
+    effectiveStatus: getEffectiveInvoiceStatus(invoice, getTodayInSaoPaulo()),
     installments,
     invoice,
     invoiceCycle: invoice
@@ -161,5 +166,23 @@ export async function getCardDetail(
     invoiceTotal: installments
       .filter((item) => item.status !== "cancelled")
       .reduce((total, item) => total + Number(item.amount), 0),
+    payment,
   };
+}
+
+export async function getInvoiceForPayment(
+  card: CreditCard,
+  invoiceId: string,
+): Promise<CardDetail | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("card_invoices")
+    .select("reference_month")
+    .eq("id", invoiceId)
+    .eq("workspace_id", card.workspace_id)
+    .eq("credit_card_id", card.id)
+    .maybeSingle();
+  if (error) throw new Error(`Não foi possível carregar a fatura: ${error.message}`);
+  if (!data) return null;
+  return getCardDetail(card, data.reference_month.slice(0, 7));
 }

@@ -1,5 +1,6 @@
 import type {
   CardInvoicePeriod,
+  EffectiveInvoiceStatus,
   InstallmentPlanItem,
   InvoiceCycle,
 } from "@/types/cards";
@@ -226,4 +227,13 @@ export function calculateCommittedLimit(
 
 export function calculateAvailableLimit(limit: number | string, committed: number) {
   return Number(limit) - committed;
+}
+
+export function getEffectiveInvoiceStatus(
+  invoice: { closing_date: string; status: string } | null,
+  today: string,
+): EffectiveInvoiceStatus {
+  if (invoice?.status === "paid") return "paid";
+  if (invoice && invoice.closing_date <= today) return "closed";
+  return "open";
 }

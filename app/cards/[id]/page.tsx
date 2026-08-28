@@ -34,7 +34,14 @@ async function CardContent({ params, searchParams }: Props) {
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8">
       <PageHeader
-        action={<Button asChild><Link href={`/cards/${card.id}/purchases/new`}><Plus /> Nova compra</Link></Button>}
+        action={(
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {detail.invoice && detail.effectiveStatus === "closed" && detail.invoiceTotal > 0 && (
+              <Button asChild><Link href={`/cards/${card.id}/invoices/${detail.invoice.id}/pay`}>Pagar fatura</Link></Button>
+            )}
+            <Button asChild variant="outline"><Link href={`/cards/${card.id}/purchases/new`}><Plus /> Nova compra</Link></Button>
+          </div>
+        )}
         description={`Fecha dia ${card.closing_day} · Vence dia ${card.due_day}`}
         title={card.name}
       />
@@ -51,7 +58,7 @@ async function CardContent({ params, searchParams }: Props) {
           <div>
             <div className="flex items-center gap-3">
               <h2 className="text-xl font-semibold">Fatura</h2>
-              {detail.invoice ? <StatusBadge status={detail.invoice.status} /> : <span className="text-xs text-muted-foreground">Sem fatura gerada</span>}
+              {detail.invoice ? <StatusBadge status={detail.effectiveStatus} /> : <span className="text-xs text-muted-foreground">Sem fatura gerada</span>}
             </div>
             <p className="mt-1 text-sm text-muted-foreground">
               Fecha em {formatDate(detail.invoice?.closing_date ?? period.closingDate)} · Vence em {formatDate(detail.invoice?.due_date ?? period.dueDate)}
@@ -59,6 +66,20 @@ async function CardContent({ params, searchParams }: Props) {
           </div>
           <InvoiceMonthSelector cardId={card.id} period={period} />
         </div>
+
+        {detail.payment && (
+          <div className="grid gap-4 rounded-2xl border border-green-200 bg-green-50 p-5 text-green-950 sm:grid-cols-3">
+            <div><p className="text-xs text-green-700">Valor pago</p><MoneyValue className="mt-1 block font-bold" tone="income" value={detail.payment.amount} /></div>
+            <div><p className="text-xs text-green-700">Data do pagamento</p><p className="mt-1 font-semibold">{formatDate(detail.payment.payment_date)}</p></div>
+            <div><p className="text-xs text-green-700">Conta utilizada</p><p className="mt-1 font-semibold">{detail.payment.account?.name ?? "Conta não disponível"}</p></div>
+          </div>
+        )}
+
+        {detail.invoice && detail.effectiveStatus === "open" && (
+          <p className="rounded-xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800">
+            Esta fatura ainda está aberta. O pagamento ficará disponível após o fechamento.
+          </p>
+        )}
 
         {detail.installments.length > 0 ? (
           <div className="divide-y overflow-hidden rounded-2xl border bg-card shadow-sm">
