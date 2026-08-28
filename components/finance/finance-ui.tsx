@@ -29,10 +29,13 @@ export function MoneyValue({
   );
 }
 
-export function StatusBadge({ status }: { status: TransactionStatus | "active" | "inactive" }) {
+export function StatusBadge({ status }: { status: TransactionStatus | "active" | "inactive" | "open" | "closed" | "cancelled" }) {
   const config = {
     active: { className: "bg-green-50 text-green-700 ring-green-600/20", label: "Ativa" },
     inactive: { className: "bg-slate-100 text-slate-600 ring-slate-500/20", label: "Inativa" },
+    open: { className: "bg-blue-50 text-blue-700 ring-blue-600/20", label: "Aberta" },
+    closed: { className: "bg-amber-50 text-amber-700 ring-amber-600/20", label: "Fechada" },
+    cancelled: { className: "bg-slate-100 text-slate-600 ring-slate-500/20", label: "Cancelada" },
     paid: { className: "bg-green-50 text-green-700 ring-green-600/20", label: "Pago" },
     pending: { className: "bg-amber-50 text-amber-700 ring-amber-600/20", label: "Pendente" },
   }[status];

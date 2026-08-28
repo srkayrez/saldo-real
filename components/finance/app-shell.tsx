@@ -35,6 +35,14 @@ function WorkspaceSelectorLoading() {
   return <div className="h-14 w-full animate-pulse rounded-lg bg-muted" />;
 }
 
+function SidebarNavigationLoading() {
+  return <div className="h-48 animate-pulse rounded-xl bg-muted" />;
+}
+
+function MobileNavigationLoading() {
+  return <div className="fixed inset-x-0 bottom-0 z-50 h-16 border-t bg-card md:hidden" />;
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
@@ -53,7 +61,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Suspense>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
-          <SidebarNavigation />
+          <Suspense fallback={<SidebarNavigationLoading />}>
+            <SidebarNavigation />
+          </Suspense>
         </div>
         <div className="border-t p-4">
           <LogoutButton />
@@ -76,7 +86,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="pb-24 md:pb-0">{children}</div>
       </div>
 
-      <MobileNavigation />
+      <Suspense fallback={<MobileNavigationLoading />}>
+        <MobileNavigation />
+      </Suspense>
     </div>
   );
 }

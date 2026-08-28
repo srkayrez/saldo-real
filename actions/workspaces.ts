@@ -22,6 +22,7 @@ export async function setActiveWorkspace(workspaceId: string): Promise<void> {
 
   revalidatePath("/dashboard");
   revalidatePath("/accounts");
+  revalidatePath("/cards");
   revalidatePath("/transactions");
   revalidatePath("/transactions/new");
 }

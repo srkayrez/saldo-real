@@ -17,6 +17,7 @@ const primaryItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/transactions", icon: ArrowLeftRight, label: "Movimentações" },
   { href: "/accounts", icon: WalletCards, label: "Contas" },
+  { href: "/cards", icon: CreditCard, label: "Cartões" },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -57,10 +58,6 @@ export function SidebarNavigation() {
         </p>
         <div className="mt-2 space-y-1" aria-label="Funcionalidades futuras">
           <div className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-muted-foreground/60">
-            <CreditCard className="size-5" />
-            Cartões
-          </div>
-          <div className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm text-muted-foreground/60">
             <ChartNoAxesCombined className="size-5" />
             Planejamento
           </div>
@@ -78,8 +75,8 @@ export function MobileNavigation() {
       className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden"
       aria-label="Navegação mobile"
     >
-      <div className="mx-auto grid max-w-md grid-cols-4">
-        {primaryItems.map((item) => {
+      <div className="mx-auto grid max-w-md grid-cols-5">
+        {primaryItems.slice(0, 2).map((item) => {
           const Icon = item.icon;
           const active = isActive(pathname, item.href);
           return (
@@ -108,6 +105,24 @@ export function MobileNavigation() {
           <Plus className="size-5" />
           Adicionar
         </Link>
+        {primaryItems.slice(2).map((item) => {
+          const Icon = item.icon;
+          const active = isActive(pathname, item.href);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-medium",
+                active ? "text-primary" : "text-muted-foreground",
+              )}
+            >
+              <Icon className="size-5" />
+              {item.label}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );
