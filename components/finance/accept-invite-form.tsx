@@ -1,0 +1,3 @@
+"use client";
+import { useActionState } from "react"; import { acceptWorkspaceInvitation } from "@/actions/workspaces"; import { Button } from "@/components/ui/button";
+export function AcceptInviteForm({ token }: { token: string }) { const [state, action, pending] = useActionState(acceptWorkspaceInvitation, {}); return <form action={action} className="space-y-3"><input type="hidden" name="token" value={token} /><Button disabled={pending}>{pending ? "Aceitando..." : "Aceitar convite"}</Button>{state.error && <p className="text-sm text-destructive">{state.error}</p>}{state.success && <p className="text-sm text-finance-income">{state.success}</p>}</form>; }

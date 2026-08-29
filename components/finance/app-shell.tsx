@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Settings } from "lucide-react";
 import { Suspense } from "react";
 
 import { LogoutButton } from "@/components/logout-button";
@@ -66,6 +67,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Suspense>
         </div>
         <div className="border-t p-4">
+          <Link href="/workspaces" className="mb-2 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"><Settings className="size-4" /> Espaços e membros</Link>
           <LogoutButton />
         </div>
       </aside>
@@ -81,6 +83,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <WorkspaceSelectorContent selectorId="mobile-active-workspace" />
               </Suspense>
             </div>
+            <Link href="/workspaces" aria-label="Espaços e membros" className="grid size-10 shrink-0 place-items-center rounded-lg border"><Settings className="size-4" /></Link>
           </div>
         </header>
         <div className="pb-24 md:pb-0">{children}</div>

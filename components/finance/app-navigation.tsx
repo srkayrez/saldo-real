@@ -7,6 +7,8 @@ import {
   Repeat2,
   TrendingUp,
   Plus,
+  PiggyBank,
+  Target,
   WalletCards,
 } from "lucide-react";
 import Link from "next/link";
@@ -21,6 +23,8 @@ const primaryItems = [
   { href: "/cards", icon: CreditCard, label: "Cartões" },
   { href: "/recurrences", icon: Repeat2, label: "Recorrências" },
   { href: "/forecast", icon: TrendingUp, label: "Previsão" },
+  { href: "/budgets", icon: PiggyBank, label: "Orçamentos" },
+  { href: "/goals", icon: Target, label: "Metas" },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -67,7 +71,7 @@ export function MobileNavigation() {
       className="fixed inset-x-0 bottom-0 z-50 border-t bg-card/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur md:hidden"
       aria-label="Navegação mobile"
     >
-      <div className="mx-auto grid max-w-xl grid-cols-7">
+      <div className="mx-auto flex max-w-xl overflow-x-auto">
         {primaryItems.slice(0, 2).map((item) => {
           const Icon = item.icon;
           const active = isActive(pathname, item.href);
@@ -77,7 +81,7 @@ export function MobileNavigation() {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-medium",
+                "flex min-h-12 min-w-[4.25rem] flex-1 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-medium",
                 active ? "text-primary" : "text-muted-foreground",
               )}
             >
@@ -90,7 +94,7 @@ export function MobileNavigation() {
           href="/transactions/new"
           aria-current={pathname === "/transactions/new" ? "page" : undefined}
           className={cn(
-            "flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-medium",
+            "flex min-h-12 min-w-[4.25rem] flex-1 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-medium",
             pathname === "/transactions/new" ? "text-primary" : "text-muted-foreground",
           )}
         >
@@ -106,7 +110,7 @@ export function MobileNavigation() {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-medium",
+                "flex min-h-12 min-w-[4.25rem] flex-1 flex-col items-center justify-center gap-1 rounded-lg text-[11px] font-medium",
                 active ? "text-primary" : "text-muted-foreground",
               )}
             >

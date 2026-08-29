@@ -1,0 +1,3 @@
+"use client";
+import { useActionState } from "react"; import { cancelGoal } from "@/actions/goals"; import { Button } from "@/components/ui/button";
+export function CancelGoalButton({ id }: { id: string }) { const [state, action, pending] = useActionState(cancelGoal, {}); return <form action={action}><input type="hidden" name="goal_id" value={id} /><Button variant="destructive" disabled={pending}>{pending ? "Cancelando..." : "Cancelar meta"}</Button>{state.error && <p className="mt-2 text-sm text-destructive">{state.error}</p>}{state.success && <p className="mt-2 text-sm text-finance-income">{state.success}</p>}</form>; }

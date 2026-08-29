@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import {
   getActiveWorkspace,
-  requireWorkspaceMembership,
+  requireWorkspaceEditor,
 } from "@/lib/finance/context";
 import {
   generateInstallmentPlan,
@@ -44,7 +44,7 @@ export async function createCreditCard(
   try {
     const workspace = await getActiveWorkspace();
     if (!workspace) return { error: "Nenhum workspace disponível." };
-    const { supabase, user } = await requireWorkspaceMembership(workspace.id);
+    const { supabase, user } = await requireWorkspaceEditor(workspace.id);
 
     if (paymentAccountId) {
       const { data: account } = await supabase
@@ -101,7 +101,7 @@ export async function createCardPurchase(
   try {
     const workspace = await getActiveWorkspace();
     if (!workspace) return { error: "Nenhum workspace disponível." };
-    const { supabase } = await requireWorkspaceMembership(workspace.id);
+    const { supabase } = await requireWorkspaceEditor(workspace.id);
     const { data: card } = await supabase
       .from("credit_cards")
       .select("id, closing_day, due_day")
@@ -168,7 +168,7 @@ export async function payCardInvoice(
   try {
     const workspace = await getActiveWorkspace();
     if (!workspace) return { error: "Nenhum workspace disponível." };
-    const { supabase } = await requireWorkspaceMembership(workspace.id);
+    const { supabase } = await requireWorkspaceEditor(workspace.id);
 
     const { data: invoice } = await supabase
       .from("card_invoices")

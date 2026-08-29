@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { getActiveWorkspace, requireWorkspaceMembership } from "@/lib/finance/context";
+import { getActiveWorkspace, requireWorkspaceEditor } from "@/lib/finance/context";
 import type { ActionState, TransactionStatus, TransactionType } from "@/types/finance";
 
 const transactionTypes = new Set<TransactionType>(["income", "expense"]);
@@ -37,7 +37,7 @@ function parseTransactionInput(formData: FormData, editing = false): Transaction
 async function getValidatedContext(input: TransactionInput) {
   const workspace = await getActiveWorkspace();
   if (!workspace) throw new Error("Nenhum workspace disponível.");
-  const context = await requireWorkspaceMembership(workspace.id);
+  const context = await requireWorkspaceEditor(workspace.id);
   const { supabase } = context;
   const { data: account } = await supabase.from("accounts").select("id")
     .eq("id", input.accountId).eq("workspace_id", workspace.id).eq("active", true).maybeSingle();
@@ -102,7 +102,7 @@ export async function markTransactionPaid(_state: ActionState, formData: FormDat
   try {
     const workspace = await getActiveWorkspace();
     if (!workspace) return { error: "Nenhum workspace disponível." };
-    const { supabase } = await requireWorkspaceMembership(workspace.id);
+    const { supabase } = await requireWorkspaceEditor(workspace.id);
     const { data: transaction } = await supabase.from("transactions").select("id, origin, status")
       .eq("id", id).eq("workspace_id", workspace.id).maybeSingle();
     if (!transaction) return { error: "Movimentação inexistente ou inacessível." };
@@ -122,7 +122,7 @@ export async function cancelTransaction(_state: ActionState, formData: FormData)
   try {
     const workspace = await getActiveWorkspace();
     if (!workspace) return { error: "Nenhum workspace disponível." };
-    const { supabase } = await requireWorkspaceMembership(workspace.id);
+    const { supabase } = await requireWorkspaceEditor(workspace.id);
     const { data: transaction } = await supabase.from("transactions").select("id, origin, status")
       .eq("id", id).eq("workspace_id", workspace.id).maybeSingle();
     if (!transaction) return { error: "Movimentação inexistente ou inacessível." };

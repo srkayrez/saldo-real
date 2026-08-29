@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { addDaysToIsoDate, getTodayInSaoPaulo } from "@/lib/finance/date";
+import { getMonthlyConsumptionItems } from "@/lib/finance/consumption";
 import { ensureRecurrenceWindow } from "@/lib/finance/recurrences/data";
 import type {
   Account,
@@ -21,6 +22,7 @@ type DashboardTransaction = Pick<
   | "transaction_type"
 > & {
   category: { name: string } | null;
+  category_id: string | null;
   origin: "manual" | "card_invoice_payment" | "recurrence";
 };
 
@@ -37,6 +39,7 @@ type DashboardCardInstallment = {
   } | null;
   purchase: {
     category: { name: string } | null;
+    category_id: string | null;
     description: string;
   } | null;
   status: string;
@@ -213,14 +216,14 @@ export async function getFinancialDashboard(
       .eq("workspace_id", workspaceId),
     supabase
       .from("transactions")
-      .select("id, description, amount, transaction_type, transaction_date, paid_date, status, origin, recurrence_rule_id, recurrence_reference_month, category:categories(name)")
+      .select("id, description, amount, transaction_type, transaction_date, paid_date, status, origin, category_id, recurrence_rule_id, recurrence_reference_month, category:categories(name)")
       .eq("workspace_id", workspaceId),
     supabase
       .from("card_installments")
       .select(`
         id, amount, status, credit_card_id,
         invoice:card_invoices(id, reference_month, due_date, status),
-        purchase:card_purchases(description, category:categories(name))
+        purchase:card_purchases(description, category_id, category:categories(name))
       `)
       .eq("workspace_id", workspaceId),
     supabase
@@ -272,32 +275,9 @@ export async function getFinancialDashboard(
         transaction.transaction_date < period.endDate,
     )
     .reduce((total, transaction) => total + toAmount(transaction.amount), 0);
-  const monthlyManualExpenses = transactions.filter(
-    (transaction) =>
-      transaction.origin !== "card_invoice_payment" &&
-      transaction.transaction_type === "expense" &&
-      (transaction.status === "paid" || transaction.status === "pending") &&
-      transaction.transaction_date >= period.startDate &&
-      transaction.transaction_date < period.endDate,
-  );
-  const monthlyCardInstallments = installments.filter(
-    (installment) =>
-      installment.status !== "cancelled" &&
-      installment.invoice?.reference_month === `${period.month}-01`,
-  );
-  const monthlyExpenses =
-    monthlyManualExpenses.reduce((total, item) => total + toAmount(item.amount), 0) +
-    monthlyCardInstallments.reduce((total, item) => total + toAmount(item.amount), 0);
-  const categoryItems: CategoryAmount[] = [
-    ...monthlyManualExpenses.map((item) => ({
-      amount: item.amount,
-      categoryName: item.category?.name ?? "Sem categoria",
-    })),
-    ...monthlyCardInstallments.map((item) => ({
-      amount: item.amount,
-      categoryName: item.purchase?.category?.name ?? "Sem categoria",
-    })),
-  ];
+  const consumptionItems = getMonthlyConsumptionItems(transactions, installments, period);
+  const monthlyExpenses = consumptionItems.reduce((total, item) => total + item.amount, 0);
+  const categoryItems: CategoryAmount[] = consumptionItems;
 
   return {
     categoryExpenses: calculateCategorySummary(categoryItems),

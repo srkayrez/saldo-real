@@ -13,12 +13,15 @@ export type TransactionStatus = "pending" | "paid" | "cancelled";
 
 export type ActionState = {
   error?: string;
+  inviteUrl?: string;
   success?: string;
 };
 
 export type WorkspaceSummary = {
   id: string;
   name: string;
+  role: "editor" | "owner" | "viewer";
+  workspace_type: "personal" | "shared";
 };
 
 export type Account = {

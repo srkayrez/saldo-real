@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import {
   getActiveWorkspace,
-  requireWorkspaceMembership,
+  requireWorkspaceEditor,
 } from "@/lib/finance/context";
 import { ACCOUNT_TYPES, type ActionState } from "@/types/finance";
 
@@ -37,7 +37,7 @@ export async function createAccount(
     }
 
     const workspaceId = workspace.id;
-    const { supabase, user } = await requireWorkspaceMembership(workspaceId);
+    const { supabase, user } = await requireWorkspaceEditor(workspaceId);
     const { error } = await supabase.from("accounts").insert({
       workspace_id: workspaceId,
       created_by: user.id,

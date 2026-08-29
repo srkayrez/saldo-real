@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 export function SignUpForm({
@@ -26,6 +26,8 @@ export function SignUpForm({
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnPath = searchParams.get("next");
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +46,7 @@ export function SignUpForm({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
+          emailRedirectTo: `${window.location.origin}/auth/confirm?next=${encodeURIComponent(returnPath?.startsWith("/") && !returnPath.startsWith("//") ? returnPath : "/dashboard")}`,
         },
       });
       if (error) throw error;
@@ -108,7 +110,7 @@ export function SignUpForm({
             </div>
             <div className="mt-4 text-center text-sm">
               Already have an account?{" "}
-              <Link href="/auth/login" className="underline underline-offset-4">
+              <Link href={returnPath ? `/auth/login?next=${encodeURIComponent(returnPath)}` : "/auth/login"} className="underline underline-offset-4">
                 Login
               </Link>
             </div>
