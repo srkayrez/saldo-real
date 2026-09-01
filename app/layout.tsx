@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
@@ -10,7 +10,16 @@ const defaultUrl = process.env.VERCEL_URL
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "Saldo Real",
-  description: "Finanças pessoais de forma simples e clara",
+  description: "Organize suas finanças, acompanhe compromissos e descubra quanto está realmente disponível.",
+  applicationName: "Saldo Real",
+  manifest: "/manifest.webmanifest",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#2563eb" },
+    { media: "(prefers-color-scheme: dark)", color: "#1d4ed8" },
+  ],
 };
 
 const geistSans = Geist({

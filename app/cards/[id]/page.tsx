@@ -30,16 +30,17 @@ async function CardContent({ params, searchParams }: Props) {
     getTodayInSaoPaulo(),
   );
   const detail = await getCardDetail(card, period.month);
+  const canEdit = workspace.role !== "viewer";
 
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8">
       <PageHeader
         action={(
           <div className="flex flex-col gap-2 sm:flex-row">
-            {detail.invoice && detail.effectiveStatus === "closed" && detail.invoiceTotal > 0 && (
+            {canEdit && detail.invoice && detail.effectiveStatus === "closed" && detail.invoiceTotal > 0 && (
               <Button asChild><Link href={`/cards/${card.id}/invoices/${detail.invoice.id}/pay`}>Pagar fatura</Link></Button>
             )}
-            <Button asChild variant="outline"><Link href={`/cards/${card.id}/purchases/new`}><Plus /> Nova compra</Link></Button>
+            {canEdit && <Button asChild variant="outline"><Link href={`/cards/${card.id}/purchases/new`}><Plus /> Nova compra</Link></Button>}
           </div>
         )}
         description={`Fecha dia ${card.closing_day} · Vence dia ${card.due_day}`}
@@ -102,7 +103,7 @@ async function CardContent({ params, searchParams }: Props) {
         ) : (
           <div className="rounded-2xl border bg-card shadow-sm">
             <EmptyState
-              action={<Button asChild><Link href={`/cards/${card.id}/purchases/new`}><Plus /> Nova compra</Link></Button>}
+              action={canEdit ? <Button asChild><Link href={`/cards/${card.id}/purchases/new`}><Plus /> Nova compra</Link></Button> : undefined}
               description="Não há parcelas vinculadas a esta fatura."
               title="Fatura sem compras"
             />

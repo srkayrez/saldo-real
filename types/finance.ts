@@ -67,18 +67,21 @@ export type Transaction = {
 
 export type RecurrenceRule = {
   account: { name: string } | null;
-  account_id: string;
+  account_id: string | null;
   active: boolean;
   amount: number | string;
   amount_type: "fixed" | "estimated";
   category: { name: string } | null;
   category_id: string | null;
+  credit_card: { name: string } | null;
+  credit_card_id: string | null;
   created_at: string;
   day_of_month: number;
   end_date: string | null;
   frequency: "monthly";
   id: string;
   name: string;
+  payment_method: "account" | "credit_card";
   start_date: string;
   transaction_type: TransactionType;
   workspace_id: string;

@@ -3,10 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { getActiveWorkspace, requireWorkspaceEditor } from "@/lib/finance/context";
+import { isValidIsoDate } from "@/lib/finance/date";
+import { getFriendlyActionError, getFriendlyDatabaseError } from "@/lib/finance/errors";
 import type { ActionState, TransactionStatus, TransactionType } from "@/types/finance";
 
 const transactionTypes = new Set<TransactionType>(["income", "expense"]);
-const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
 type TransactionInput = {
   accountId: string; amount: number; categoryId: string | null; description: string;
@@ -29,8 +30,8 @@ function parseTransactionInput(formData: FormData, editing = false): Transaction
   if (!Number.isFinite(amount) || amount <= 0) return { error: "O valor deve ser maior que zero." };
   if (!transactionTypes.has(transactionType)) return { error: "Selecione um tipo válido." };
   if (status !== "pending" && status !== "paid") return { error: "Selecione um status válido." };
-  if (!accountId || !datePattern.test(transactionDate)) return { error: "Informe a conta e a data financeira." };
-  if (status === "paid" && (!paidDate || !datePattern.test(paidDate))) return { error: "Informe a data efetiva do pagamento." };
+  if (!accountId || !isValidIsoDate(transactionDate)) return { error: "Informe a conta e uma data financeira válida." };
+  if (status === "paid" && (!paidDate || !isValidIsoDate(paidDate))) return { error: "Informe uma data efetiva de pagamento válida." };
   return { accountId, amount, categoryId, description, notes, paidDate, status, transactionDate, transactionType };
 }
 
@@ -66,8 +67,8 @@ export async function createTransaction(_state: ActionState, formData: FormData)
       paid_date: input.paidDate, status: input.status, transaction_date: input.transactionDate,
       transaction_type: input.transactionType, workspace_id: workspace.id,
     });
-    if (error) return { error: `Não foi possível registrar a movimentação: ${error.message}` };
-  } catch (error) { return { error: error instanceof Error ? error.message : "Erro inesperado." }; }
+    if (error) return { error: getFriendlyDatabaseError(error, "Não foi possível registrar a movimentação.") };
+  } catch (error) { return { error: getFriendlyActionError(error) }; }
   revalidateTransactionPaths();
   return { success: "Movimentação registrada com sucesso." };
 }
@@ -89,8 +90,8 @@ export async function updateTransaction(_state: ActionState, formData: FormData)
       description: input.description, notes: input.notes, transaction_date: input.transactionDate,
       transaction_type: input.transactionType,
     }).eq("id", id).eq("workspace_id", workspace.id).neq("origin", "card_invoice_payment").eq("status", "pending");
-    if (error) return { error: `Não foi possível atualizar a movimentação: ${error.message}` };
-  } catch (error) { return { error: error instanceof Error ? error.message : "Erro inesperado." }; }
+    if (error) return { error: getFriendlyDatabaseError(error, "Não foi possível atualizar a movimentação.") };
+  } catch (error) { return { error: getFriendlyActionError(error) }; }
   revalidateTransactionPaths(id);
   return { success: "Movimentação atualizada com sucesso." };
 }
@@ -98,7 +99,7 @@ export async function updateTransaction(_state: ActionState, formData: FormData)
 export async function markTransactionPaid(_state: ActionState, formData: FormData): Promise<ActionState> {
   const id = String(formData.get("transaction_id") ?? "");
   const paidDate = String(formData.get("paid_date") ?? "");
-  if (!id || !datePattern.test(paidDate)) return { error: "Informe uma data de pagamento válida." };
+  if (!id || !isValidIsoDate(paidDate)) return { error: "Informe uma data de pagamento válida." };
   try {
     const workspace = await getActiveWorkspace();
     if (!workspace) return { error: "Nenhum workspace disponível." };
@@ -110,8 +111,8 @@ export async function markTransactionPaid(_state: ActionState, formData: FormDat
     if (transaction.status !== "pending") return { error: "Somente movimentações pendentes podem ser marcadas como pagas." };
     const { error } = await supabase.from("transactions").update({ paid_date: paidDate, status: "paid" })
       .eq("id", id).eq("workspace_id", workspace.id).neq("origin", "card_invoice_payment").eq("status", "pending");
-    if (error) return { error: `Não foi possível liquidar a movimentação: ${error.message}` };
-  } catch (error) { return { error: error instanceof Error ? error.message : "Erro inesperado." }; }
+    if (error) return { error: getFriendlyDatabaseError(error, "Não foi possível liquidar a movimentação.") };
+  } catch (error) { return { error: getFriendlyActionError(error) }; }
   revalidateTransactionPaths(id);
   return { success: "Movimentação marcada como paga." };
 }
@@ -130,8 +131,8 @@ export async function cancelTransaction(_state: ActionState, formData: FormData)
     if (transaction.status !== "pending") return { error: "Somente movimentações pendentes podem ser canceladas." };
     const { error } = await supabase.from("transactions").update({ paid_date: null, status: "cancelled" })
       .eq("id", id).eq("workspace_id", workspace.id).neq("origin", "card_invoice_payment").eq("status", "pending");
-    if (error) return { error: `Não foi possível cancelar a movimentação: ${error.message}` };
-  } catch (error) { return { error: error instanceof Error ? error.message : "Erro inesperado." }; }
+    if (error) return { error: getFriendlyDatabaseError(error, "Não foi possível cancelar a movimentação.") };
+  } catch (error) { return { error: getFriendlyActionError(error) }; }
   revalidateTransactionPaths(id);
   return { success: "Movimentação cancelada sem apagar o histórico." };
 }

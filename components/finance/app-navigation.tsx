@@ -63,7 +63,7 @@ export function SidebarNavigation() {
   );
 }
 
-export function MobileNavigation() {
+export function MobileNavigation({ canEdit = true }: { canEdit?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -90,7 +90,7 @@ export function MobileNavigation() {
             </Link>
           );
         })}
-        <Link
+        {canEdit && <Link
           href="/transactions/new"
           aria-current={pathname === "/transactions/new" ? "page" : undefined}
           className={cn(
@@ -100,7 +100,7 @@ export function MobileNavigation() {
         >
           <Plus className="size-5" />
           Adicionar
-        </Link>
+        </Link>}
         {primaryItems.slice(2).map((item) => {
           const Icon = item.icon;
           const active = isActive(pathname, item.href);

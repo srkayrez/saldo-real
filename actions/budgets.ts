@@ -1,6 +1,6 @@
 "use server";
 import { revalidatePath } from "next/cache";
-import { getActiveWorkspace, requireWorkspaceMembership } from "@/lib/finance/context";
+import { getActiveWorkspace, requireWorkspaceEditor as requireWorkspaceMembership } from "@/lib/finance/context";
 import type { ActionState } from "@/types/finance";
 
 function validMonth(value: string) { return /^\d{4}-(0[1-9]|1[0-2])$/.test(value); }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 import { createAccount } from "@/actions/accounts";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,14 @@ import { ACCOUNT_TYPES } from "@/types/finance";
 export function AccountForm() {
   const [state, action, pending] = useActionState(createAccount, {});
   const formRef = useRef<HTMLFormElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
-    if (state.success) formRef.current?.reset();
-  }, [state.success]);
+    if (state.success) {
+      formRef.current?.reset();
+      router.refresh();
+    }
+  }, [router, state]);
 
   return (
     <form ref={formRef} action={action} className="grid gap-5 rounded-2xl border bg-card p-5 shadow-sm sm:grid-cols-3 sm:p-6">

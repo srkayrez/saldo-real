@@ -12,6 +12,8 @@ import {
   parseMoneyToCents,
 } from "@/lib/finance/cards/engine";
 import { getTodayInSaoPaulo } from "@/lib/finance/cards/data";
+import { isValidIsoDate } from "@/lib/finance/date";
+import { getFriendlyActionError, getFriendlyDatabaseError } from "@/lib/finance/errors";
 import type { ActionState } from "@/types/finance";
 
 function parseDay(value: FormDataEntryValue | null) {
@@ -67,9 +69,9 @@ export async function createCreditCard(
       payment_account_id: paymentAccountId,
       workspace_id: workspace.id,
     });
-    if (error) return { error: `Não foi possível criar o cartão: ${error.message}` };
+    if (error) return { error: getFriendlyDatabaseError(error, "Não foi possível criar o cartão.") };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Erro inesperado." };
+    return { error: getFriendlyActionError(error) };
   }
 
   revalidatePath("/cards");
@@ -91,7 +93,7 @@ export async function createCardPurchase(
   if (!cardId || !description || description.length > 200) {
     return { error: "Informe uma descrição válida." };
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(purchaseDate)) {
+  if (!isValidIsoDate(purchaseDate)) {
     return { error: "Informe uma data de compra válida." };
   }
   if (!Number.isInteger(installmentCount) || installmentCount < 1 || installmentCount > 360) {
@@ -139,9 +141,9 @@ export async function createCardPurchase(
       p_purchase_date: purchaseDate,
       p_total_amount: totalAmount.replace(",", "."),
     });
-    if (error) return { error: `Não foi possível registrar a compra: ${error.message}` };
+    if (error) return { error: getFriendlyDatabaseError(error, "Não foi possível registrar a compra.") };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Erro inesperado." };
+    return { error: getFriendlyActionError(error) };
   }
 
   revalidatePath("/cards");
@@ -161,7 +163,7 @@ export async function payCardInvoice(
   if (!invoiceId || !cardId || !accountId) {
     return { error: "Selecione uma conta para pagamento." };
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
+  if (!isValidIsoDate(paymentDate)) {
     return { error: "Informe uma data de pagamento válida." };
   }
 
@@ -197,9 +199,9 @@ export async function payCardInvoice(
       p_invoice_id: invoiceId,
       p_payment_date: paymentDate,
     });
-    if (error) return { error: `Não foi possível pagar a fatura: ${error.message}` };
+    if (error) return { error: getFriendlyDatabaseError(error, "Não foi possível pagar a fatura.") };
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Erro inesperado." };
+    return { error: getFriendlyActionError(error) };
   }
 
   revalidatePath("/dashboard");

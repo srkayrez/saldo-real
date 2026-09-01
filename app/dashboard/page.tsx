@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { AppShell, FinancePageLoading } from "@/components/finance/app-shell";
 import { DashboardMonthSelector } from "@/components/finance/dashboard-month-selector";
+import { OnboardingChecklist } from "@/components/finance/onboarding-checklist";
 import {
   EmptyState,
   MetricCard,
@@ -17,6 +18,8 @@ import {
   resolveDashboardPeriod,
 } from "@/lib/finance/dashboard";
 import { formatDate } from "@/lib/finance/format";
+import { getOnboardingProgress, isOnboardingSkipped } from "@/lib/finance/onboarding";
+import { isOnboardingComplete } from "@/types/onboarding";
 
 type DashboardSearchParams = Promise<{
   month?: string | string[];
@@ -40,7 +43,11 @@ async function DashboardContent({ searchParams }: { searchParams: DashboardSearc
   }
 
   const period = resolveDashboardPeriod(params.month);
-  const dashboard = await getFinancialDashboard(workspace.id, period);
+  const [dashboard, onboarding, onboardingSkipped] = await Promise.all([
+    getFinancialDashboard(workspace.id, period),
+    getOnboardingProgress(workspace.id),
+    isOnboardingSkipped(workspace.id),
+  ]);
 
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8">
@@ -49,6 +56,10 @@ async function DashboardContent({ searchParams }: { searchParams: DashboardSearc
         description={`Visão geral de ${workspace.name}`}
         title="Dashboard financeiro"
       />
+
+      {!onboardingSkipped && !isOnboardingComplete(onboarding) && (
+        <OnboardingChecklist compact progress={onboarding} />
+      )}
 
       <RealBalanceCard
         committed={dashboard.upcomingCommitmentsTotal}
@@ -144,7 +155,7 @@ async function DashboardContent({ searchParams }: { searchParams: DashboardSearc
               Ver todas
             </Link>
           </div>
-          <div className="hidden overflow-hidden rounded-2xl border bg-card shadow-sm md:block">
+          <div className="hidden overflow-x-auto rounded-2xl border bg-card shadow-sm md:block">
             <table className="w-full min-w-[650px] text-left text-sm">
               <thead className="border-b bg-muted/50">
                 <tr>

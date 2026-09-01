@@ -3,6 +3,7 @@ import { Plus, WalletCards } from "lucide-react";
 import Link from "next/link";
 
 import { AccountForm } from "@/components/finance/account-form";
+import { AccountActions } from "@/components/finance/account-actions";
 import { AppShell, FinancePageLoading } from "@/components/finance/app-shell";
 import {
   EmptyState,
@@ -23,15 +24,16 @@ async function AccountsContent() {
   }
 
   const accounts = await getAccounts(workspace.id);
+  const canEdit = workspace.role !== "viewer";
 
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8">
       <PageHeader
-        action={(
+        action={canEdit ? (
           <Button asChild className="w-full sm:w-auto">
             <Link href="#nova-conta"><Plus /> Nova conta</Link>
           </Button>
-        )}
+        ) : undefined}
         description={`Organize as contas de ${workspace.name}`}
         title="Contas"
       />
@@ -58,26 +60,27 @@ async function AccountsContent() {
                   <p className="text-xs text-muted-foreground">Saldo inicial</p>
                   <MoneyValue className="mt-1 block text-xl font-bold" value={account.initial_balance} />
                 </div>
+                {canEdit && <AccountActions accountId={account.id} active={account.active} />}
               </article>
             ))}
           </div>
         ) : (
           <div className="rounded-2xl border bg-card shadow-sm">
             <EmptyState
-              action={<Button asChild><Link href="#nova-conta"><Plus /> Criar conta</Link></Button>}
+              action={canEdit ? <Button asChild><Link href="#nova-conta"><Plus /> Criar conta</Link></Button> : undefined}
               description="Crie uma conta para começar a registrar suas movimentações."
               title="Nenhuma conta cadastrada"
             />
           </div>
         )}
       </section>
-      <section id="nova-conta" className="scroll-mt-6 space-y-4">
+      {canEdit && <section id="nova-conta" className="scroll-mt-6 space-y-4">
         <div>
           <h2 className="text-lg font-semibold">Nova conta</h2>
           <p className="text-sm text-muted-foreground">Informe os dados básicos da conta financeira.</p>
         </div>
         <AccountForm />
-      </section>
+      </section>}
     </main>
   );
 }

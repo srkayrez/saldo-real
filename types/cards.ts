@@ -74,6 +74,16 @@ export type InvoiceInstallment = {
   } | null;
 };
 
+export type RecurringCardOccurrence = {
+  amount: number | string;
+  credit_card: { name: string } | null;
+  id: string;
+  invoice: { reference_month: string; status: InvoiceStatus } | null;
+  purchase_date: string;
+  recurrence_reference_month: string;
+  status: InstallmentStatus;
+};
+
 export type CardDetail = {
   availableLimit: number;
   card: CreditCard;

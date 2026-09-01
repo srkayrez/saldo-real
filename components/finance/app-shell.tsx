@@ -3,6 +3,7 @@ import { Settings } from "lucide-react";
 import { Suspense } from "react";
 
 import { LogoutButton } from "@/components/logout-button";
+import { PwaRegistration } from "@/components/pwa-registration";
 import {
   MobileNavigation,
   SidebarNavigation,
@@ -44,9 +45,15 @@ function MobileNavigationLoading() {
   return <div className="fixed inset-x-0 bottom-0 z-50 h-16 border-t bg-card md:hidden" />;
 }
 
+async function MobileNavigationContent() {
+  const workspace = await getActiveWorkspace();
+  return <MobileNavigation canEdit={workspace?.role !== "viewer"} />;
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
+      <PwaRegistration />
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r bg-card md:flex">
         <div className="border-b px-6 py-6">
           <Link href="/dashboard" className="flex items-center gap-3 text-lg font-bold tracking-tight">
@@ -67,7 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Suspense>
         </div>
         <div className="border-t p-4">
-          <Link href="/workspaces" className="mb-2 flex h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"><Settings className="size-4" /> Espaços e membros</Link>
+          <Link href="/settings" className="mb-2 flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"><Settings className="size-4" /> Configurações</Link>
           <LogoutButton />
         </div>
       </aside>
@@ -83,14 +90,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <WorkspaceSelectorContent selectorId="mobile-active-workspace" />
               </Suspense>
             </div>
-            <Link href="/workspaces" aria-label="Espaços e membros" className="grid size-10 shrink-0 place-items-center rounded-lg border"><Settings className="size-4" /></Link>
+            <Link href="/settings" aria-label="Configurações" className="grid size-11 shrink-0 place-items-center rounded-lg border"><Settings className="size-4" /></Link>
           </div>
         </header>
         <div className="pb-24 md:pb-0">{children}</div>
       </div>
 
       <Suspense fallback={<MobileNavigationLoading />}>
-        <MobileNavigation />
+        <MobileNavigationContent />
       </Suspense>
     </div>
   );

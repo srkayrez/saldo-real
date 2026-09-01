@@ -8,7 +8,7 @@ import type { FinancialForecast, ForecastEvent } from "@/types/forecast";
 
 type ForecastTransaction = Pick<Transaction, "amount" | "description" | "id" | "origin" | "recurrence_rule_id" | "transaction_date" | "transaction_type">;
 type InvoiceRow = { credit_card_id: string; due_date: string; id: string; status: string };
-type InstallmentRow = { amount: number | string; invoice_id: string; status: string };
+type InstallmentRow = { amount: number | string; invoice_id: string; purchase: { recurrence_rule_id: string | null }[]; status: string };
 
 function amount(value: number | string) {
   const parsed = Number(value);
@@ -27,7 +27,7 @@ export async function getFinancialForecast(workspaceId: string): Promise<Financi
       .eq("workspace_id", workspaceId).eq("status", "pending").neq("origin", "card_invoice_payment").lt("transaction_date", horizonEnd),
     supabase.from("card_invoices").select("id, credit_card_id, due_date, status")
       .eq("workspace_id", workspaceId).neq("status", "paid").lt("due_date", horizonEnd),
-    supabase.from("card_installments").select("invoice_id, amount, status").eq("workspace_id", workspaceId).neq("status", "cancelled"),
+    supabase.from("card_installments").select("invoice_id, amount, status, purchase:card_purchases(recurrence_rule_id)").eq("workspace_id", workspaceId).neq("status", "cancelled"),
     supabase.from("credit_cards").select("id, name").eq("workspace_id", workspaceId),
     supabase.from("recurrence_rules").select("id, amount_type").eq("workspace_id", workspaceId),
   ]);
@@ -41,8 +41,11 @@ export async function getFinancialForecast(workspaceId: string): Promise<Financi
   const estimatedRuleIds = new Set((rulesResult.data ?? []).filter((rule) => rule.amount_type === "estimated").map((rule) => rule.id));
   const cards = new Map((cardsResult.data ?? []).map((card) => [card.id, card.name]));
   const installmentTotals = new Map<string, number>();
+  const estimatedInvoiceIds = new Set<string>();
   for (const installment of (installmentsResult.data ?? []) as InstallmentRow[]) {
     installmentTotals.set(installment.invoice_id, (installmentTotals.get(installment.invoice_id) ?? 0) + amount(installment.amount));
+    const recurrenceRuleId = installment.purchase?.[0]?.recurrence_rule_id;
+    if (recurrenceRuleId && estimatedRuleIds.has(recurrenceRuleId)) estimatedInvoiceIds.add(installment.invoice_id);
   }
 
   const transactionEvents: ForecastEvent[] = ((pendingResult.data ?? []) as ForecastTransaction[]).map((transaction) => ({
@@ -54,7 +57,7 @@ export async function getFinancialForecast(workspaceId: string): Promise<Financi
   const invoiceEvents: ForecastEvent[] = ((invoicesResult.data ?? []) as InvoiceRow[])
     .map((invoice) => ({
       amount: installmentTotals.get(invoice.id) ?? 0, date: invoice.due_date,
-      description: `Fatura ${cards.get(invoice.credit_card_id) ?? "Cartão"}`, estimated: false,
+      description: `Fatura ${cards.get(invoice.credit_card_id) ?? "Cartão"}`, estimated: estimatedInvoiceIds.has(invoice.id),
       id: `invoice-${invoice.id}`, kind: "card_invoice" as const, origin: "Fatura" as const,
     })).filter((event) => event.amount > 0);
 

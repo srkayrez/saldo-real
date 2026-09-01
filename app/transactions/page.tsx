@@ -19,15 +19,16 @@ async function TransactionsContent() {
   const workspace = await getActiveWorkspace();
   if (!workspace) return <main className="mx-auto max-w-6xl p-6">Nenhum workspace disponível.</main>;
   const transactions = await getTransactions(workspace.id);
+  const canEdit = workspace.role !== "viewer";
 
   return (
     <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
       <PageHeader
-        action={<Button asChild className="w-full sm:w-auto"><Link href="/transactions/new"><Plus /> Nova movimentação</Link></Button>}
+        action={canEdit ? <Button asChild className="w-full sm:w-auto"><Link href="/transactions/new"><Plus /> Nova movimentação</Link></Button> : undefined}
         description={`Histórico financeiro de ${workspace.name}`}
         title="Movimentações"
       />
-      <div className="hidden overflow-hidden rounded-2xl border bg-card shadow-sm md:block">
+      <div className="hidden overflow-x-auto rounded-2xl border bg-card shadow-sm md:block">
         <table className="w-full min-w-[850px] text-left text-sm">
           <thead className="border-b bg-muted/50"><tr><th className="p-4">Data</th><th className="p-4">Descrição</th><th className="p-4">Categoria</th><th className="p-4">Conta</th><th className="p-4">Tipo</th><th className="p-4">Valor</th><th className="p-4">Status</th><th className="p-4">Ações</th></tr></thead>
           <tbody>
@@ -41,7 +42,7 @@ async function TransactionsContent() {
                 <td className="p-4 font-semibold"><MoneyValue tone={transaction.transaction_type === "income" ? "income" : "expense"} value={transaction.amount} /></td>
                 <td className="p-4"><StatusBadge status={transaction.status} /></td>
                 <td className="p-4">
-                  {transaction.origin !== "card_invoice_payment" && transaction.status === "pending"
+                  {canEdit && transaction.origin !== "card_invoice_payment" && transaction.status === "pending"
                     ? <TransactionActions compact transactionId={transaction.id} />
                     : <Button asChild size="sm" variant="outline"><Link href={`/transactions/${transaction.id}`}>Ver</Link></Button>}
                 </td>
@@ -73,7 +74,7 @@ async function TransactionsContent() {
               <StatusBadge status={transaction.status} />
             </div>
             <div className="mt-3">
-              {transaction.origin !== "card_invoice_payment" && transaction.status === "pending"
+              {canEdit && transaction.origin !== "card_invoice_payment" && transaction.status === "pending"
                 ? <TransactionActions compact transactionId={transaction.id} />
                 : <Button asChild className="w-full" size="sm" variant="outline"><Link href={`/transactions/${transaction.id}`}>Ver detalhes</Link></Button>}
             </div>
@@ -82,7 +83,7 @@ async function TransactionsContent() {
         {transactions.length === 0 && (
           <div className="rounded-2xl border bg-card shadow-sm">
             <EmptyState
-              action={<Button asChild><Link href="/transactions/new"><Plus /> Adicionar</Link></Button>}
+              action={canEdit ? <Button asChild><Link href="/transactions/new"><Plus /> Adicionar</Link></Button> : undefined}
               title="Nenhuma movimentação"
               description="Registre uma receita ou despesa para começar seu histórico."
             />

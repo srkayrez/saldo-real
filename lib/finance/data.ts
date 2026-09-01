@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { ensureRecurrenceWindow } from "@/lib/finance/recurrences/data";
+import { getNextMonthStart } from "@/lib/finance/date";
 import type { Account, Category, Transaction } from "@/types/finance";
 
 export async function getAccounts(workspaceId: string): Promise<Account[]> {
@@ -41,7 +42,7 @@ export async function getCategories(workspaceId: string): Promise<Category[]> {
 export async function getTransactions(workspaceId: string): Promise<Transaction[]> {
   await ensureRecurrenceWindow(workspaceId);
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const [transactionsResult, accountsResult] = await Promise.all([supabase
     .from("transactions")
     .select(`
       id,
@@ -60,18 +61,27 @@ export async function getTransactions(workspaceId: string): Promise<Transaction[
       recurrence_rule_id,
       recurrence_reference_month,
       card_invoice_id,
-      account:accounts(name),
       category:categories(name)
     `)
     .eq("workspace_id", workspaceId)
     .order("transaction_date", { ascending: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false }),
+  supabase.from("accounts").select("id, name").eq("workspace_id", workspaceId)]);
 
+  const error = transactionsResult.error ?? accountsResult.error;
   if (error) {
     throw new Error(`Não foi possível carregar as movimentações: ${error.message}`);
   }
 
-  return (data ?? []) as unknown as Transaction[];
+  const accounts = new Map((accountsResult.data ?? []).map((account) => [account.id, { name: account.name }]));
+  const nextMonthStart = getNextMonthStart();
+  return ((transactionsResult.data ?? []) as unknown as Omit<Transaction, "account">[])
+    .map((transaction) => ({ ...transaction, account: accounts.get(transaction.account_id) ?? null }))
+    .filter((transaction) => !(
+      transaction.origin === "recurrence"
+      && transaction.status === "pending"
+      && transaction.transaction_date >= nextMonthStart
+    ));
 }
 
 export async function getTransaction(workspaceId: string, transactionId: string): Promise<Transaction | null> {
@@ -81,7 +91,7 @@ export async function getTransaction(workspaceId: string, transactionId: string)
     .select(`
       id, workspace_id, account_id, category_id, created_at, description, amount,
       transaction_type, transaction_date, paid_date, status, notes, origin,
-      card_invoice_id, recurrence_rule_id, recurrence_reference_month, account:accounts(name), category:categories(name)
+      card_invoice_id, recurrence_rule_id, recurrence_reference_month, category:categories(name)
     `)
     .eq("id", transactionId)
     .eq("workspace_id", workspaceId)
@@ -90,6 +100,10 @@ export async function getTransaction(workspaceId: string, transactionId: string)
   if (!data) return null;
 
   const transaction = data as unknown as Transaction;
+  const { data: account, error: accountError } = await supabase.from("accounts")
+    .select("name").eq("id", transaction.account_id).eq("workspace_id", workspaceId).maybeSingle();
+  if (accountError) throw new Error(`Não foi possível carregar a conta relacionada: ${accountError.message}`);
+  transaction.account = account;
   if (transaction.card_invoice_id) {
     const { data: invoice, error: invoiceError } = await supabase
       .from("card_invoices")

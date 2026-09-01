@@ -18,11 +18,11 @@ async function TransactionDetailContent({ params }: Props) {
   const transaction = await getTransaction(workspace.id, route.id);
   if (!transaction) notFound();
   const isInvoicePayment = transaction.origin === "card_invoice_payment";
-  const canChange = transaction.origin !== "card_invoice_payment" && transaction.status === "pending";
+  const canChange = workspace.role !== "viewer" && transaction.origin !== "card_invoice_payment" && transaction.status === "pending";
   const fields = [
     ["Tipo", transaction.transaction_type === "income" ? "Receita" : "Despesa"],
     ["Categoria", transaction.category?.name ?? "Sem categoria"],
-    ["Conta", transaction.account?.name ?? "—"],
+    ["Conta", transaction.account?.name ?? "Conta não disponível"],
     ["Data financeira / vencimento", formatDate(transaction.transaction_date)],
     ["Data efetiva do pagamento", transaction.paid_date ? formatDate(transaction.paid_date) : "Não pago"],
     ["Origem", isInvoicePayment ? "Pagamento de fatura" : transaction.origin === "recurrence" ? "Recorrente" : "Movimentação manual"],

@@ -17,11 +17,12 @@ async function CardsContent() {
   const workspace = await getActiveWorkspace();
   if (!workspace) return <main className="mx-auto max-w-7xl p-6">Nenhum workspace disponível.</main>;
   const cards = await getCreditCards(workspace.id);
+  const canEdit = workspace.role !== "viewer";
 
   return (
     <main className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8">
       <PageHeader
-        action={<Button asChild className="w-full sm:w-auto"><Link href="/cards/new"><Plus /> Novo cartão</Link></Button>}
+        action={canEdit ? <Button asChild className="w-full sm:w-auto"><Link href="/cards/new"><Plus /> Novo cartão</Link></Button> : undefined}
         description={`Cartões de crédito de ${workspace.name}`}
         title="Cartões"
       />
@@ -60,7 +61,7 @@ async function CardsContent() {
       ) : (
         <div className="rounded-2xl border bg-card shadow-sm">
           <EmptyState
-            action={<Button asChild><Link href="/cards/new"><Plus /> Criar cartão</Link></Button>}
+            action={canEdit ? <Button asChild><Link href="/cards/new"><Plus /> Criar cartão</Link></Button> : undefined}
             description="Cadastre um cartão para organizar compras e faturas."
             title="Nenhum cartão cadastrado"
           />

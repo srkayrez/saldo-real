@@ -6,6 +6,7 @@ import { createCardPurchase } from "@/actions/cards";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getTodayInSaoPaulo } from "@/lib/finance/date";
 import type { Category } from "@/types/finance";
 
 const selectClass = "h-11 w-full rounded-lg border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2";
@@ -18,7 +19,7 @@ export function CardPurchaseForm({
   categories: Category[];
 }) {
   const [state, action, pending] = useActionState(createCardPurchase, {});
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayInSaoPaulo();
 
   return (
     <form action={action} className="grid gap-5 rounded-2xl border bg-card p-5 shadow-sm sm:grid-cols-2 sm:p-6">

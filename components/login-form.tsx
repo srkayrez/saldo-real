@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { getFriendlyAuthError } from "@/lib/auth/errors";
 
 export function LoginForm({
   className,
@@ -41,9 +42,9 @@ export function LoginForm({
       });
       if (error) throw error;
       // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push(returnPath?.startsWith("/") && !returnPath.startsWith("//") ? returnPath : "/dashboard");
+      router.push(returnPath?.startsWith("/") && !returnPath.startsWith("//") && !returnPath.includes("\\") ? returnPath : "/dashboard");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(getFriendlyAuthError(error, "Não foi possível entrar. Tente novamente."));
     } finally {
       setIsLoading(false);
     }
@@ -53,9 +54,9 @@ export function LoginForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle className="text-2xl">Entrar</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Acesse sua conta do Saldo Real
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -74,12 +75,12 @@ export function LoginForm({
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Senha</Label>
                   <Link
                     href="/auth/forgot-password"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                   >
-                    Forgot your password?
+                    Esqueceu sua senha?
                   </Link>
                 </div>
                 <Input
@@ -92,16 +93,16 @@ export function LoginForm({
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
+                {isLoading ? "Entrando..." : "Entrar"}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
+              Ainda não tem uma conta?{" "}
               <Link
                 href={returnPath ? `/auth/sign-up?next=${encodeURIComponent(returnPath)}` : "/auth/sign-up"}
                 className="underline underline-offset-4"
               >
-                Sign up
+                Criar conta
               </Link>
             </div>
           </form>

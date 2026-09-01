@@ -1,4 +1,44 @@
-import Link from "next/link"; import { Plus } from "lucide-react"; import { Suspense } from "react";
-import { AppShell, FinancePageLoading } from "@/components/finance/app-shell"; import { EmptyState, MoneyValue, PageHeader, StatusBadge } from "@/components/finance/finance-ui"; import { Button } from "@/components/ui/button"; import { getActiveWorkspace } from "@/lib/finance/context"; import { getRecurrenceRules } from "@/lib/finance/recurrences/data";
-async function Content() { const workspace = await getActiveWorkspace(); if (!workspace) return <main className="p-6">Nenhum workspace disponível.</main>; const rules = await getRecurrenceRules(workspace.id); return <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8"><PageHeader title="Recorrências" description={`Contas fixas e receitas recorrentes de ${workspace.name}`} action={<Button asChild><Link href="/recurrences/new"><Plus /> Nova recorrência</Link></Button>} />{rules.length ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{rules.map((rule) => <article key={rule.id} className="rounded-2xl border bg-card p-5 shadow-sm"><div className="flex justify-between gap-3"><div><h2 className="font-semibold">{rule.name}</h2><p className="text-sm text-muted-foreground">{rule.transaction_type === "income" ? "Receita" : "Despesa"} · todo dia {rule.day_of_month}</p></div><StatusBadge status={rule.active ? "active" : "inactive"} /></div><MoneyValue className="mt-5 block text-2xl font-bold" tone={rule.transaction_type === "income" ? "income" : "expense"} value={rule.amount} /><p className="mt-1 text-xs text-muted-foreground">Valor {rule.amount_type === "fixed" ? "fixo" : "estimado"} · {rule.account?.name ?? "Conta"}</p><Button asChild className="mt-5 w-full" variant="outline"><Link href={`/recurrences/${rule.id}`}>Ver detalhes</Link></Button></article>)}</div> : <div className="rounded-2xl border bg-card"><EmptyState title="Nenhuma recorrência" description="Crie uma conta fixa ou receita recorrente." action={<Button asChild><Link href="/recurrences/new">Criar recorrência</Link></Button>} /></div>}</main>; }
-export default function Page() { return <AppShell><Suspense fallback={<FinancePageLoading />}><Content /></Suspense></AppShell>; }
+import { Plus } from "lucide-react";
+import Link from "next/link";
+import { Suspense } from "react";
+
+import { AppShell, FinancePageLoading } from "@/components/finance/app-shell";
+import { EmptyState, MoneyValue, PageHeader, StatusBadge } from "@/components/finance/finance-ui";
+import { Button } from "@/components/ui/button";
+import { getActiveWorkspace } from "@/lib/finance/context";
+import { getRecurrenceRules } from "@/lib/finance/recurrences/data";
+
+async function Content() {
+  const workspace = await getActiveWorkspace();
+  if (!workspace) return <main className="p-6">Nenhum workspace disponível.</main>;
+  const rules = await getRecurrenceRules(workspace.id);
+  const canEdit = workspace.role !== "viewer";
+
+  return (
+    <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+      <PageHeader
+        title="Recorrências"
+        description={`Contas fixas e receitas recorrentes de ${workspace.name}`}
+        action={canEdit ? <Button asChild><Link href="/recurrences/new"><Plus /> Nova recorrência</Link></Button> : undefined}
+      />
+      {rules.length ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {rules.map((rule) => (
+            <article key={rule.id} className="rounded-2xl border bg-card p-5 shadow-sm">
+              <div className="flex justify-between gap-3"><div><h2 className="font-semibold">{rule.name}</h2><p className="text-sm text-muted-foreground">{rule.transaction_type === "income" ? "Receita" : "Despesa"} · todo dia {rule.day_of_month}</p></div><StatusBadge status={rule.active ? "active" : "inactive"} /></div>
+              <MoneyValue className="mt-5 block text-2xl font-bold" tone={rule.transaction_type === "income" ? "income" : "expense"} value={rule.amount} />
+              <p className="mt-1 text-xs text-muted-foreground">Valor {rule.amount_type === "fixed" ? "fixo" : "estimado"} · {rule.payment_method === "credit_card" ? `Cartão ${rule.credit_card?.name ?? "não disponível"}` : `Conta ${rule.account?.name ?? "não disponível"}`}</p>
+              <Button asChild className="mt-5 w-full" variant="outline"><Link href={`/recurrences/${rule.id}`}>Ver detalhes</Link></Button>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-2xl border bg-card"><EmptyState title="Nenhuma recorrência" description="Crie uma conta fixa ou receita recorrente." action={canEdit ? <Button asChild><Link href="/recurrences/new">Criar recorrência</Link></Button> : undefined} /></div>
+      )}
+    </main>
+  );
+}
+
+export default function Page() {
+  return <AppShell><Suspense fallback={<FinancePageLoading />}><Content /></Suspense></AppShell>;
+}

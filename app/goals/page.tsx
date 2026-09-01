@@ -16,10 +16,11 @@ async function Content() {
   const workspace = await getActiveWorkspace();
   if (!workspace) return <main className="p-6">Nenhum workspace disponível.</main>;
   const summary = await getGoals(workspace.id);
+  const canEdit = workspace.role !== "viewer";
   const current = summary.goals.filter((goal) => goal.effectiveStatus !== "cancelled");
   const cancelled = summary.goals.filter((goal) => goal.effectiveStatus === "cancelled");
   return <main className="mx-auto max-w-7xl space-y-8 p-4 sm:p-6 lg:p-8">
-    <PageHeader title="Metas" description={`Objetivos financeiros de ${workspace.name}`} action={<Button asChild><Link href="/goals/new"><Plus /> Nova meta</Link></Button>} />
+    <PageHeader title="Metas" description={`Objetivos financeiros de ${workspace.name}`} action={canEdit ? <Button asChild><Link href="/goals/new"><Plus /> Nova meta</Link></Button> : undefined} />
     <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <CountCard label="Metas ativas" description="Em andamento" value={summary.active} />
       <MetricCard label="Total alvo" description="Metas não canceladas" value={summary.target} />
@@ -33,7 +34,7 @@ async function Content() {
       <div className="mt-2 flex justify-between text-xs text-muted-foreground"><span>{goal.percentage.toFixed(0)}%</span><span>Restante <MoneyValue value={goal.remainingAmount} /></span></div>
       {goal.target_date && <p className={`mt-4 text-sm ${goal.overdue ? "text-destructive" : "text-muted-foreground"}`}>{goal.overdue ? "Meta atrasada" : `Prazo: ${formatDate(goal.target_date)}`}</p>}
       <Button asChild className="mt-5 w-full" variant="outline"><Link href={`/goals/${goal.id}`}>Ver meta</Link></Button>
-    </article>)}</section> : <div className="rounded-2xl border bg-card"><EmptyState title="Nenhuma meta ativa" description="Crie um objetivo e acompanhe seus aportes." action={<Button asChild><Link href="/goals/new">Criar meta</Link></Button>} /></div>}
+    </article>)}</section> : <div className="rounded-2xl border bg-card"><EmptyState title="Nenhuma meta ativa" description="Crie um objetivo e acompanhe seus aportes." action={canEdit ? <Button asChild><Link href="/goals/new">Criar meta</Link></Button> : undefined} /></div>}
     {cancelled.length > 0 && <section className="space-y-3"><h2 className="text-xl font-semibold">Histórico cancelado</h2><div className="grid gap-3 sm:grid-cols-2">{cancelled.map((goal) => <Link className="rounded-xl border bg-card p-4 hover:bg-muted/50" href={`/goals/${goal.id}`} key={goal.id}><p className="font-medium">{goal.name}</p><p className="text-sm text-muted-foreground">Acumulado: <MoneyValue value={goal.savedAmount} /></p></Link>)}</div></section>}
   </main>;
 }
